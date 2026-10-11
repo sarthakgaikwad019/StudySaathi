@@ -62,18 +62,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Greeting */}
         <div>
-          <h2 className="text-3xl font-bold text-foreground tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             {getGreeting()}! 👋
           </h2>
           <p className="text-muted text-sm mt-1">{formatDate()}</p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
           <StatCard
             icon={Clock}
             label="Study Time Today"

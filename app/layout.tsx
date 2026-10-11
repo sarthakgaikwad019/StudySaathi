@@ -9,17 +9,17 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Crazy 8s — Think Smart. Study Smart.",
+  title: "StudySathi — Plan. Focus. Grow.",
   description:
-    "A smart student time-management app. Track study time, tasks, streaks, and focus sessions.",
+    "A smart student time-management app. Plan. Focus. Grow. Track study time, tasks, streaks, and focus sessions.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="h-full flex bg-background text-foreground font-sans antialiased">
+      <body className="h-full flex flex-col md:flex-row bg-background text-foreground font-sans antialiased">
         <Sidebar />
-        <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        <main className="flex-1 flex flex-col min-h-screen overflow-hidden pb-16 md:pb-0">
           {children}
         </main>
       </body>

@@ -101,7 +101,7 @@ export default function AssistantPage() {
       {
         id: "welcome-1",
         role: "model",
-        text: "Hey! I'm your **Crazy 8s AI Study Assistant**. How can I help your study routine today? Feel free to ask in English or Hinglish! 🚀",
+        text: "Hey! I'm your **StudySathi AI Study Assistant**. How can I help your study routine today? Feel free to ask in English or Hinglish! 🚀",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]);
