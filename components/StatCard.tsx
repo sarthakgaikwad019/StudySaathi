@@ -5,6 +5,7 @@ interface StatCardProps {
   label: string;
   value: string;
   accent: "green" | "purple" | "orange" | "blue";
+  subtext?: string;
 }
 
 const accentStyles = {
@@ -30,7 +31,7 @@ const accentStyles = {
   },
 };
 
-export default function StatCard({ icon: Icon, label, value, accent }: StatCardProps) {
+export default function StatCard({ icon: Icon, label, value, accent, subtext }: StatCardProps) {
   const style = accentStyles[accent];
 
   return (
@@ -46,6 +47,9 @@ export default function StatCard({ icon: Icon, label, value, accent }: StatCardP
           <p className="text-2xl font-bold text-foreground tracking-tight">
             {value}
           </p>
+          {subtext && (
+            <p className="text-xs text-muted font-normal">{subtext}</p>
+          )}
         </div>
       </div>
     </div>

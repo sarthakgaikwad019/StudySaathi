@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Clock, CheckCircle2, Flame, Target } from "lucide-react";
-import type { Task } from "@/lib/types";
+import type { Task, StreakData } from "@/lib/types";
 import {
   seedSampleData,
   getTasksForToday,
   getTodayFocusMinutes,
-  getStreak,
+  computeStreak,
+  getFocusScore,
 } from "@/lib/storage";
 import StatCard from "@/components/StatCard";
 import ScheduleList from "@/components/ScheduleList";
@@ -32,21 +33,25 @@ function formatDate(): string {
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [focusMinutes, setFocusMinutes] = useState(0);
-  const [streak, setStreakVal] = useState(0);
+  const [streak, setStreakData] = useState<StreakData>({
+    currentStreak: 0,
+    lastActiveDate: "",
+    longestStreak: 0,
+  });
+  const [focusScore, setFocusScore] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     seedSampleData();
     setTasks(getTasksForToday());
     setFocusMinutes(getTodayFocusMinutes());
-    setStreakVal(getStreak().currentStreak);
+    setStreakData(computeStreak());
+    setFocusScore(getFocusScore());
     setMounted(true);
   }, []);
 
   const completedCount = tasks.filter((t) => t.completed).length;
   const totalCount = tasks.length;
-  const focusScore =
-    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   if (!mounted) {
     return (
@@ -84,7 +89,8 @@ export default function DashboardPage() {
           <StatCard
             icon={Flame}
             label="Current Streak"
-            value={`${streak} days`}
+            value={`${streak.currentStreak} days`}
+            subtext={`Best: ${streak.longestStreak} days`}
             accent="orange"
           />
           <StatCard

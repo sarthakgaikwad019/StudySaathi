@@ -1,5 +1,14 @@
 import type { Task } from "@/lib/types";
-import { Check, Circle, BookOpen, FileText, Users, HelpCircle } from "lucide-react";
+import {
+  Check,
+  Circle,
+  BookOpen,
+  FileText,
+  GraduationCap,
+  FlaskConical,
+  FolderKanban,
+  HelpCircle,
+} from "lucide-react";
 
 interface ScheduleListProps {
   tasks: Task[];
@@ -10,8 +19,10 @@ const categoryConfig: Record<
   { color: string; bg: string; icon: typeof BookOpen }
 > = {
   Study: { color: "text-primary-700", bg: "bg-primary-50", icon: BookOpen },
+  Class: { color: "text-sky-700", bg: "bg-sky-50", icon: GraduationCap },
+  Practical: { color: "text-teal-700", bg: "bg-teal-50", icon: FlaskConical },
   Assignment: { color: "text-amber-700", bg: "bg-amber-50", icon: FileText },
-  Meeting: { color: "text-accent-700", bg: "bg-accent-50", icon: Users },
+  Project: { color: "text-rose-700", bg: "bg-rose-50", icon: FolderKanban },
   Other: { color: "text-gray-700", bg: "bg-gray-100", icon: HelpCircle },
 };
 
@@ -42,7 +53,7 @@ export default function ScheduleList({ tasks }: ScheduleListProps) {
       </div>
       <ul className="divide-y divide-border">
         {sorted.map((task) => {
-          const config = categoryConfig[task.category];
+          const config = categoryConfig[task.category] || categoryConfig.Other;
           const CategoryIcon = config.icon;
           return (
             <li
