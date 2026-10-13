@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
-import { generateContentWithFallback } from "@/lib/gemini";
+import { generateContentStreamWithFallback } from "@/lib/gemini";
 
-const SYSTEM_PROMPT = `You are StudySathi AI Study Assistant for Indian college students (engineering, diploma, pharmacy). Be short, practical and encouraging. Help with study plans, procrastination and exam stress. Answer in the language the student uses (English, Hindi, or Hinglish). Keep responses concise, formatted with clear bullet points or short paragraphs.`;
+const SYSTEM_PROMPT = `You are StudySaathi AI, a study assistant for Indian college students (engineering, diploma, pharmacy). Format answers in clean Markdown: a short direct answer first, then short sections with headings or bullets when useful, bold for key terms, tables for comparisons, numbered steps for plans. Keep answers concise and practical. Use the student's language (English, Hindi or Marathi). If the student shares an image, describe the key points first, then help.`;
 
 const SELF_HARM_REGEX =
   /\b(suicide|suicidal|kill myself|end my life|want to die|hurt myself|harm myself|cutting myself|take my life|don't want to live|tired of living)\b/i;
@@ -14,23 +13,55 @@ Please talk to someone you trust right now, or reach out to India's free, 24/7 n
 
 Please take a gentle breath and reach out for support right away. You are not alone. 💙`;
 
+const MAX_IMAGE_SIZE = 4 * 1024 * 1024; // 4 MB
+const ALLOWED_MIME = ["image/png", "image/jpeg", "image/webp"];
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { message, history = [], context } = body;
+    const { message, history = [], context, image } = body;
 
-    if (!message || typeof message !== "string" || !message.trim()) {
-      return NextResponse.json(
-        { error: "Message is required" },
-        { status: 400 }
+    if (
+      (!message || typeof message !== "string" || !message.trim()) &&
+      !image
+    ) {
+      return new Response(
+        JSON.stringify({ error: "Message or image is required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const trimmed = message.trim();
+    const trimmed = (message || "").trim();
 
-    // Safety check for self-harm
-    if (SELF_HARM_REGEX.test(trimmed)) {
-      return NextResponse.json({ reply: CRISIS_RESPONSE });
+    // Safety check for self-harm (text only) — return as non-streamed JSON
+    if (trimmed && SELF_HARM_REGEX.test(trimmed)) {
+      return new Response(
+        JSON.stringify({ reply: CRISIS_RESPONSE }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate image if provided
+    if (image) {
+      if (!image.mimeType || !image.data) {
+        return new Response(
+          JSON.stringify({ error: "Image must include mimeType and data fields." }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      if (!ALLOWED_MIME.includes(image.mimeType)) {
+        return new Response(
+          JSON.stringify({ error: "Only PNG, JPG, and WebP images are accepted." }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      const approxSize = (image.data.length * 3) / 4;
+      if (approxSize > MAX_IMAGE_SIZE) {
+        return new Response(
+          JSON.stringify({ error: "Image exceeds the 4 MB size limit." }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Build context note if provided
@@ -56,30 +87,81 @@ export async function POST(req: Request) {
       }
     }
 
-    // Add current user message with context
+    // Build the current user message parts
+    const userParts: any[] = [];
+
+    if (image) {
+      userParts.push({
+        inlineData: {
+          mimeType: image.mimeType,
+          data: image.data,
+        },
+      });
+    }
+
+    const textContent = trimmed
+      ? `${contextNote}${trimmed}`
+      : `${contextNote}Please analyze this image and provide helpful insights for a student.`;
+    userParts.push({ text: textContent });
+
     contents.push({
       role: "user",
-      parts: [{ text: `${contextNote}${trimmed}` }],
+      parts: userParts,
     });
 
-    const response = await generateContentWithFallback({
+    // Stream the response
+    const stream = await generateContentStreamWithFallback({
       contents,
       config: {
         systemInstruction: SYSTEM_PROMPT,
       },
     });
 
-    const reply = response.text || "I'm here to help with your studies and schedule! What would you like to work on?";
+    // Create a ReadableStream that sends SSE chunks
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream) {
+            const text = chunk.text || "";
+            if (text) {
+              // Send as SSE data line
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ text })}\n\n`)
+              );
+            }
+          }
+          // Signal stream end
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        } catch (err) {
+          console.error("Stream error:", err);
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ error: "Stream interrupted. Please try again." })}\n\n`
+            )
+          );
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        }
+      },
+    });
 
-    return NextResponse.json({ reply });
+    return new Response(readable, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      },
+    });
   } catch (error: any) {
     console.error("Error in /api/chat:", error);
-    return NextResponse.json(
-      {
+    return new Response(
+      JSON.stringify({
         reply:
           "I'm having a brief issue reaching the AI service right now. Please check your connection and try again in a few seconds!",
-      },
-      { status: 200 } // Return 200 with friendly reply so UI handles it gracefully
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
     );
   }
 }
