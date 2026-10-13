@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, CheckCircle2, Flame, Target, RotateCcw } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Clock, CheckCircle2, Flame, Target } from "lucide-react";
 import type { Task, StreakData } from "@/lib/types";
 import {
   initializeStorage,
@@ -14,8 +15,23 @@ import {
   getFocusScore,
 } from "@/lib/storage";
 import StatCard from "@/components/StatCard";
+import TiltCard from "@/components/TiltCard";
 import ScheduleList from "@/components/ScheduleList";
 import QuoteBar from "@/components/QuoteBar";
+
+// ── 3D Dynamic Components (SSR: false) ────────────────────────
+
+const Hero3D = dynamic(() => import("@/components/3d/Hero3D"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[230px] sm:h-[260px] rounded-2xl bg-gradient-to-r from-primary-50 via-accent-50 to-primary-50 animate-pulse border border-border" />
+  ),
+});
+
+const Streak3D = dynamic(() => import("@/components/3d/Streak3D"), {
+  ssr: false,
+  loading: () => <Flame className="w-6 h-6 text-amber-500 animate-pulse" />,
+});
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -92,51 +108,49 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
       <div className="max-w-5xl mx-auto space-y-6">
-        {/* Greeting & Header Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-              {getGreeting()}! 👋
-            </h2>
-            <p className="text-muted text-sm mt-1">{formatDate()}</p>
-          </div>
-          <button
-            onClick={handleResetAll}
-            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border text-xs font-medium text-muted hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-colors"
-            title="Reset all stats and tasks to 0"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Reset Data to 0
-          </button>
-        </div>
+        {/* 3D Dashboard Hero */}
+        <Hero3D
+          greeting={getGreeting()}
+          dateStr={formatDate()}
+          onReset={handleResetAll}
+        />
 
-        {/* Stats Grid */}
+        {/* Stats Grid with 3D TiltCards & 3D Streak Flame */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-          <StatCard
-            icon={Clock}
-            label="Study Time Today"
-            value={`${focusMinutes} min`}
-            accent="blue"
-          />
-          <StatCard
-            icon={CheckCircle2}
-            label="Tasks Completed"
-            value={`${completedCount}/${totalCount}`}
-            accent="green"
-          />
-          <StatCard
-            icon={Flame}
-            label="Current Streak"
-            value={`${streak.currentStreak} days`}
-            subtext={`Best: ${streak.longestStreak} days`}
-            accent="orange"
-          />
-          <StatCard
-            icon={Target}
-            label="Focus Score"
-            value={`${focusScore}%`}
-            accent="purple"
-          />
+          <TiltCard>
+            <StatCard
+              icon={Clock}
+              label="Study Time Today"
+              value={`${focusMinutes} min`}
+              accent="blue"
+            />
+          </TiltCard>
+          <TiltCard>
+            <StatCard
+              icon={CheckCircle2}
+              label="Tasks Completed"
+              value={`${completedCount}/${totalCount}`}
+              accent="green"
+            />
+          </TiltCard>
+          <TiltCard>
+            <StatCard
+              icon={Flame}
+              label="Current Streak"
+              value={`${streak.currentStreak} days`}
+              subtext={`Best: ${streak.longestStreak} days`}
+              accent="orange"
+              customIcon={<Streak3D streak={streak.currentStreak} />}
+            />
+          </TiltCard>
+          <TiltCard>
+            <StatCard
+              icon={Target}
+              label="Focus Score"
+              value={`${focusScore}%`}
+              accent="purple"
+            />
+          </TiltCard>
         </div>
 
         {/* Today's Schedule */}

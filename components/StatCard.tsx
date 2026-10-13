@@ -6,6 +6,7 @@ interface StatCardProps {
   value: string;
   accent: "green" | "purple" | "orange" | "blue";
   subtext?: string;
+  customIcon?: React.ReactNode;
 }
 
 const accentStyles = {
@@ -31,16 +32,23 @@ const accentStyles = {
   },
 };
 
-export default function StatCard({ icon: Icon, label, value, accent, subtext }: StatCardProps) {
+export default function StatCard({
+  icon: Icon,
+  label,
+  value,
+  accent,
+  subtext,
+  customIcon,
+}: StatCardProps) {
   const style = accentStyles[accent];
 
   return (
     <div className="bg-card rounded-2xl p-5 shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
       <div className="flex items-center gap-4">
         <div
-          className={`w-12 h-12 rounded-xl ${style.bg} ring-1 ${style.ring} flex items-center justify-center shrink-0`}
+          className={`w-12 h-12 rounded-xl ${style.bg} ring-1 ${style.ring} flex items-center justify-center shrink-0 overflow-hidden`}
         >
-          <Icon className={`w-6 h-6 ${style.icon}`} />
+          {customIcon ? customIcon : <Icon className={`w-6 h-6 ${style.icon}`} />}
         </div>
         <div className="min-w-0">
           <p className="text-sm text-muted font-medium truncate">{label}</p>

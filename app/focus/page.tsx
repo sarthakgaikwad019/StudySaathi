@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Play, Pause, RotateCcw, CheckCircle2 } from "lucide-react";
 import type { Task } from "@/lib/types";
+
+const FocusRing3D = dynamic(() => import("@/components/3d/FocusRing3D"), {
+  ssr: false,
+});
 import {
   getTasks,
   saveTasks,
@@ -166,61 +171,25 @@ export default function FocusPage() {
           ))}
         </div>
 
-        {/* Circular Timer */}
+        {/* Circular Timer (3D Focus Ring with HTML readout) */}
         <div className="flex justify-center">
-          <div className="relative w-72 h-72">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
-              {/* Background track */}
-              <circle
-                cx="140"
-                cy="140"
-                r={radius}
-                fill="none"
-                stroke="currentColor"
-                className="text-border"
-                strokeWidth="8"
-              />
-              {/* Progress arc */}
-              <circle
-                cx="140"
-                cy="140"
-                r={radius}
-                fill="none"
-                stroke="url(#timerGradient)"
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                className="transition-[stroke-dashoffset] duration-300 ease-linear"
-              />
-              <defs>
-                <linearGradient
-                  id="timerGradient"
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="100%"
-                >
-                  <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="100%" stopColor="#22c55e" />
-                </linearGradient>
-              </defs>
-            </svg>
-            {/* Time display */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-5xl font-bold text-foreground tabular-nums tracking-tight">
-                {String(minutes).padStart(2, "0")}:
-                {String(seconds).padStart(2, "0")}
-              </span>
-              <span className="text-sm text-muted mt-1">
-                {isRunning
-                  ? "Focusing..."
-                  : secondsLeft === 0
-                    ? "Done!"
-                    : "Ready"}
-              </span>
-            </div>
-          </div>
+          <FocusRing3D
+            progress={progress}
+            isRunning={isRunning}
+            isComplete={secondsLeft === 0}
+          >
+            <span className="text-5xl font-bold text-foreground tabular-nums tracking-tight">
+              {String(minutes).padStart(2, "0")}:
+              {String(seconds).padStart(2, "0")}
+            </span>
+            <span className="text-sm text-muted mt-1 font-medium">
+              {isRunning
+                ? "Focusing..."
+                : secondsLeft === 0
+                  ? "Done!"
+                  : "Ready"}
+            </span>
+          </FocusRing3D>
         </div>
 
         {/* Controls */}
