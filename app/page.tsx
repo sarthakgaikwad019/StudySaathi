@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, CheckCircle2, Flame, Target } from "lucide-react";
+import { Clock, CheckCircle2, Flame, Target, RotateCcw } from "lucide-react";
 import type { Task, StreakData } from "@/lib/types";
 import {
-  seedSampleData,
+  initializeStorage,
+  resetAllDataToZero,
+  getTasks,
+  saveTasks,
   getTasksForToday,
   getTodayFocusMinutes,
   computeStreak,
@@ -42,13 +45,38 @@ export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    seedSampleData();
+    initializeStorage();
     setTasks(getTasksForToday());
     setFocusMinutes(getTodayFocusMinutes());
     setStreakData(computeStreak());
     setFocusScore(getFocusScore());
     setMounted(true);
   }, []);
+
+  const handleToggleTask = (id: string) => {
+    const all = getTasks();
+    const updated = all.map((t) =>
+      t.id === id ? { ...t, completed: !t.completed } : t
+    );
+    saveTasks(updated);
+    setTasks(getTasksForToday());
+    setFocusScore(getFocusScore());
+  };
+
+  const handleResetAll = () => {
+    if (
+      typeof window !== "undefined" &&
+      window.confirm(
+        "Reset all tasks, study focus sessions, and streak counts to 0?"
+      )
+    ) {
+      resetAllDataToZero();
+      setTasks([]);
+      setFocusMinutes(0);
+      setStreakData({ currentStreak: 0, lastActiveDate: "", longestStreak: 0 });
+      setFocusScore(0);
+    }
+  };
 
   const completedCount = tasks.filter((t) => t.completed).length;
   const totalCount = tasks.length;
@@ -64,12 +92,22 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
       <div className="max-w-5xl mx-auto space-y-6">
-        {/* Greeting */}
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            {getGreeting()}! 👋
-          </h2>
-          <p className="text-muted text-sm mt-1">{formatDate()}</p>
+        {/* Greeting & Header Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+              {getGreeting()}! 👋
+            </h2>
+            <p className="text-muted text-sm mt-1">{formatDate()}</p>
+          </div>
+          <button
+            onClick={handleResetAll}
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border text-xs font-medium text-muted hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-colors"
+            title="Reset all stats and tasks to 0"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Reset Data to 0
+          </button>
         </div>
 
         {/* Stats Grid */}
@@ -102,7 +140,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Today's Schedule */}
-        <ScheduleList tasks={tasks} />
+        <ScheduleList tasks={tasks} onToggle={handleToggleTask} />
 
         {/* Motivational Quote */}
         <QuoteBar />

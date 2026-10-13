@@ -5,13 +5,19 @@ import { Play, Pause, RotateCcw, CheckCircle2 } from "lucide-react";
 import type { Task } from "@/lib/types";
 import {
   getTasks,
+  saveTasks,
   getFocusSessions,
   saveFocusSessions,
   getTodayString,
   computeStreak,
 } from "@/lib/storage";
 
-const DURATIONS = [25, 30, 45];
+const DURATIONS = [
+  { mins: 1, label: "1 min (Test)" },
+  { mins: 25, label: "25 min" },
+  { mins: 30, label: "30 min" },
+  { mins: 45, label: "45 min" },
+];
 
 export default function FocusPage() {
   const [selectedMinutes, setSelectedMinutes] = useState(25);
@@ -49,6 +55,18 @@ export default function FocusPage() {
     });
     saveFocusSessions(sessions);
     computeStreak();
+
+    // If task was linked, mark it completed
+    if (linkedTaskId) {
+      const allTasks = getTasks();
+      const updated = allTasks.map((t) =>
+        t.id === linkedTaskId ? { ...t, completed: true } : t
+      );
+      saveTasks(updated);
+      const today = getTodayString();
+      setTasks(getTasks().filter((t) => t.date === today && !t.completed));
+      setLinkedTaskId("");
+    }
 
     setShowComplete(true);
     setTimeout(() => setShowComplete(false), 4000);
@@ -131,19 +149,19 @@ export default function FocusPage() {
         </div>
 
         {/* Duration buttons */}
-        <div className="flex justify-center gap-3">
+        <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
           {DURATIONS.map((d) => (
             <button
-              key={d}
-              onClick={() => selectDuration(d)}
+              key={d.mins}
+              onClick={() => selectDuration(d.mins)}
               disabled={isRunning}
-              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                selectedMinutes === d
+              className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                selectedMinutes === d.mins
                   ? "bg-accent-500 text-white shadow-md shadow-accent-500/25"
                   : "bg-card border border-border text-muted hover:text-foreground hover:border-accent-300 disabled:opacity-50"
               }`}
             >
-              {d} min
+              {d.label}
             </button>
           ))}
         </div>

@@ -5,6 +5,7 @@ const KEYS = {
   focusSessions: "crazy8s_focus_sessions",
   streak: "crazy8s_streak",
   seeded: "crazy8s_seeded_v2",
+  cleanZero: "crazy8s_clean_zero_v1",
 } as const;
 
 // ── Tasks ──────────────────────────────────────────────
@@ -93,7 +94,7 @@ export function computeStreak(): StreakData {
     return {
       currentStreak: 0,
       lastActiveDate: "",
-      longestStreak: stored.longestStreak,
+      longestStreak: stored.longestStreak || 0,
     };
   }
 
@@ -117,7 +118,7 @@ export function computeStreak(): StreakData {
     d.setDate(d.getDate() - 1);
   }
 
-  const longestStreak = Math.max(currentStreak, stored.longestStreak);
+  const longestStreak = Math.max(currentStreak, stored.longestStreak || 0);
 
   const result: StreakData = {
     currentStreak,
@@ -129,68 +130,28 @@ export function computeStreak(): StreakData {
   return result;
 }
 
-// ── Seed sample data (runs once) ──────────────────────
+// ── Reset all values to zero for clean real usage ───────
 
-export function seedSampleData(): void {
+export function resetAllDataToZero(): void {
   if (typeof window === "undefined") return;
-  if (localStorage.getItem(KEYS.seeded)) return;
+  saveTasks([]);
+  saveFocusSessions([]);
+  saveStreak({ currentStreak: 0, lastActiveDate: "", longestStreak: 0 });
+  localStorage.removeItem("crazy8s_assistant_history");
+  localStorage.setItem(KEYS.cleanZero, "true");
+}
 
-  const today = getTodayString();
-  const now = new Date().toISOString();
+// ── Storage initialization (ensures clean zero state) ───
 
-  const sampleTasks: Task[] = [
-    {
-      id: "seed-1",
-      title: "Data Structures revision",
-      time: "09:00",
-      category: "Study",
-      completed: true,
-      date: today,
-      createdAt: now,
-    },
-    {
-      id: "seed-2",
-      title: "DAA lecture",
-      time: "11:00",
-      category: "Class",
-      completed: false,
-      date: today,
-      createdAt: now,
-    },
-    {
-      id: "seed-3",
-      title: "Aptitude practice",
-      time: "14:00",
-      category: "Study",
-      completed: false,
-      date: today,
-      createdAt: now,
-    },
-    {
-      id: "seed-4",
-      title: "Project work",
-      time: "16:30",
-      category: "Project",
-      completed: false,
-      date: today,
-      createdAt: now,
-    },
-  ];
-
-  // Seed focus sessions for past 5 days to create a streak
-  const sampleSessions: FocusSession[] = [];
-  for (let i = 0; i < 5; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    sampleSessions.push({
-      id: `fs-seed-${i + 1}`,
-      duration: [25, 30, 25, 45, 30][i],
-      completedAt: d.toISOString(),
-      date: dateToString(d),
-    });
+export function initializeStorage(): void {
+  if (typeof window === "undefined") return;
+  const isClean = localStorage.getItem(KEYS.cleanZero);
+  if (!isClean) {
+    resetAllDataToZero();
   }
+}
 
-  saveTasks(sampleTasks);
-  saveFocusSessions(sampleSessions);
-  localStorage.setItem(KEYS.seeded, "true");
+// Backward-compatible alias
+export function seedSampleData(): void {
+  initializeStorage();
 }
